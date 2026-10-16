@@ -9,4 +9,4 @@ services:
       - key: GITHUB_TOKEN
         sync: false
       - key: GIST_ID
-        sync: false
+        value: 9b4fe954cde921ca9bd378be5cb79cf5
