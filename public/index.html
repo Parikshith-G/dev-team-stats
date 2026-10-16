@@ -3,33 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Use Cases Usage Stats</title>
+  <title>AI Use Cases Tracker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .font-mono-numbers {
-      font-family: 'JetBrains Mono', monospace;
-    }
-    /* Simple spinner */
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono-numbers { font-family: 'JetBrains Mono', monospace; }
     .spinner {
       border: 2px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       border-top-color: white;
       animation: spin 0.6s linear infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    /* Pulse badge on count change */
-    .count-bump {
-      animation: bump 0.25s ease-out;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .count-bump { animation: bump 0.25s ease-out; }
     @keyframes bump {
       0% { transform: scale(1); }
       50% { transform: scale(1.15); }
@@ -42,6 +32,8 @@
   <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Navigation -->
       <div class="flex items-center gap-6">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
@@ -60,46 +52,32 @@
         </nav>
       </div>
 
+      <!-- Header Actions -->
       <div class="flex items-center gap-2 sm:gap-3">
-        <!-- Sync Status Pill -->
-        <div id="syncStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-          <span id="syncStatusText">Checking connection...</span>
+        <!-- Live Status Pill -->
+        <div id="syncStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="syncStatusText">Live</span>
         </div>
 
         <!-- Refresh Button -->
-        <button id="refreshBtn" onclick="loadStats()" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Refresh counts from Gist">
+        <button id="refreshBtn" onclick="loadStats()" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Refresh counts">
           <svg class="w-4 h-4" id="refreshIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
         </button>
 
         <!-- Paths Directory Button -->
-        <button onclick="togglePathsModal(true)" class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all shadow-xs" title="View available paths and what they contain">
+        <button onclick="togglePathsModal(true)" class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all shadow-xs" title="View available paths">
           <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
           </svg>
           <span>Available Paths</span>
         </button>
-
-        <!-- Settings Button -->
-        <button onclick="toggleConfigModal(true)" class="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-lg transition-all shadow-xs">
-          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-          <span>Gist Config</span>
-        </button>
       </div>
+
     </div>
   </header>
-
-  <!-- Notification Banner / Alert -->
-  <div id="noticeBanner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-800 text-center flex items-center justify-center gap-2">
-    <span class="font-semibold">Notice:</span>
-    <span id="noticeBannerText">Running in local demo mode. Counts are kept in memory until you connect your GitHub Gist.</span>
-    <button onclick="toggleConfigModal(true)" class="underline font-semibold hover:text-amber-900 ml-1">Connect Gist now &rarr;</button>
-  </div>
 
   <!-- Main Content -->
   <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -111,11 +89,11 @@
       <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-base font-semibold text-slate-800">Use Cases & Usage Activity</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Click + or - to update counts. Changes are safely synchronized with GitHub Gist.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Click + or &minus; to update counts in real time.</p>
         </div>
         <div class="text-xs text-slate-500 flex items-center gap-1.5">
           <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Race-condition protected (atomic queue)</span>
+          <span>Live updates enabled</span>
         </div>
       </div>
 
@@ -130,7 +108,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200" id="tableBody">
-            <!-- Loading Skeleton Rows -->
+            <!-- Loading Row -->
             <tr>
               <td colspan="3" class="py-12 text-center text-slate-400">
                 <div class="inline-flex items-center gap-2">
@@ -151,105 +129,7 @@
 
     </div>
 
-    <!-- Quick Info Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-      <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Storage Backend</div>
-        <div class="text-sm font-medium text-slate-800 mt-1 flex items-center gap-2">
-          <svg class="w-4 h-4 text-slate-700" viewBox="0 0 16 16" fill="currentColor">
-            <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-          </svg>
-          <span id="gistLinkDisplay">GitHub Gist</span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1">Persists JSON stats directly in your GitHub Gist.</p>
-      </div>
-
-      <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Concurrency Safety</div>
-        <div class="text-sm font-medium text-emerald-700 mt-1 flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-          </svg>
-          <span>Serialized Mutex Queue</span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1">Simultaneous clicks never overwrite each other.</p>
-      </div>
-
-      <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Render Deployment</div>
-        <div class="text-sm font-medium text-slate-800 mt-1 flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-          <span>Web Service (/ai-stats)</span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1">Deploy as Node Web Service on Render in 1 step.</p>
-      </div>
-    </div>
-
   </main>
-
-  <!-- Configuration Modal -->
-  <div id="configModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-        <div class="flex items-center gap-2">
-          <div class="p-1.5 bg-indigo-100 text-indigo-600 rounded-md">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-          </div>
-          <h3 class="font-bold text-slate-900">GitHub Gist Configuration</h3>
-        </div>
-        <button onclick="toggleConfigModal(false)" class="text-slate-400 hover:text-slate-600 text-lg p-1">&times;</button>
-      </div>
-
-      <div class="p-6 space-y-4">
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Provide your GitHub Personal Access Token (classic with <code class="bg-slate-100 text-indigo-600 px-1 py-0.5 rounded font-mono">gist</code> scope) and Gist ID. When deploying on Render, you can also set these as Environment Variables (<code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded font-mono">GITHUB_TOKEN</code> and <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded font-mono">GIST_ID</code>).
-        </p>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
-              GitHub Personal Access Token (PAT)
-            </label>
-            <input type="password" id="cfgGithubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
-            <p class="text-[11px] text-slate-400 mt-1">Required to read and write to your Gist. Needs the <code class="text-indigo-600">gist</code> permission.</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
-              GitHub Gist ID
-            </label>
-            <input type="text" id="cfgGistId" placeholder="e.g. 7f98b1a2c3d4e5f6..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
-            <p class="text-[11px] text-slate-400 mt-1">The alphanumeric ID from your Gist URL: <code class="text-slate-500">gist.github.com/username/<strong>[ID]</strong></code></p>
-          </div>
-        </div>
-
-        <div id="modalAlert" class="hidden p-3 rounded-lg text-xs"></div>
-
-        <!-- 1-Click Auto Creator -->
-        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs flex items-center justify-between gap-3">
-          <div>
-            <div class="font-semibold text-indigo-900">Don't have a Gist yet?</div>
-            <div class="text-indigo-700 text-[11px]">Enter your GitHub Token above and create one automatically with one click.</div>
-          </div>
-          <button id="createGistBtn" onclick="autoCreateGist()" class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-md text-xs transition-colors shadow-xs">
-            Auto-Create Gist
-          </button>
-        </div>
-      </div>
-
-      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-        <button onclick="toggleConfigModal(false)" class="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">
-          Cancel
-        </button>
-        <button id="saveConfigBtn" onclick="saveConfiguration()" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs">
-          Save & Connect
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- Available Paths Directory Modal -->
   <div id="pathsModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" onclick="togglePathsModal(false)">
@@ -265,7 +145,7 @@
           </div>
           <div>
             <h3 class="font-bold text-slate-900 text-base">Application Routes Directory</h3>
-            <p class="text-xs text-slate-500">Available paths and what each one contains</p>
+            <p class="text-xs text-slate-500">Available pages and their features</p>
           </div>
         </div>
         <button onclick="togglePathsModal(false)" class="text-slate-400 hover:text-slate-700 text-2xl leading-none p-1">&times;</button>
@@ -274,124 +154,64 @@
       <!-- Modal Body -->
       <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
         
-        <!-- Section 1: User Frontend Pages -->
-        <div>
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">User Frontend Pages</div>
-          <div class="space-y-3">
-            
-            <!-- Path 1: /ai-stats -->
-            <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 text-sm">AI Use Cases Tracker</span>
-                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/ai-stats</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-100">or /</span>
-                  </div>
-                  <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                    Interactive real-time table tracking team usage of AI tools with concurrency-safe increment and decrement buttons (+1 / -1).
-                  </p>
-                </div>
-                <a href="/ai-stats" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
-                  <span>Visit</span> &rarr;
-                </a>
+        <!-- Path 1: /ai-stats -->
+        <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-sm">AI Use Cases Tracker</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/ai-stats</span>
               </div>
-
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
-                <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
-                  <li><strong class="text-slate-800">Headers:</strong> <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ai UseCase</code>, <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Usege Count</code>, and Action buttons (<code class="font-bold text-emerald-600">+</code> / <code class="font-bold text-rose-600">&minus;</code>).</li>
-                  <li><strong class="text-slate-800">Tracked Rows:</strong>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600 font-medium">
-                      <div>&bull; Deployment requests raised using kiro</div>
-                      <div>&bull; Bugs analyuzed using bug analyzer</div>
-                      <div>&bull; Orders raised using order creation tool</div>
-                      <div>&bull; Java upgrade agent use cases</div>
-                      <div>&bull; AI-SDLC use cases</div>
-                    </div>
-                  </li>
-                  <li><strong class="text-slate-800">Persistence:</strong> Synchronized to GitHub Gist under <code class="font-mono text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded">ai-stats.json</code>.</li>
-                  <li><strong class="text-slate-800">Safety:</strong> Mutex-queued updates prevent race conditions and lost counts.</li>
-                </ul>
-              </div>
+              <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Interactive real-time table tracking team usage of AI tools with increment and decrement buttons (+1 / -1).
+              </p>
             </div>
+            <a href="/ai-stats" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
+              <span>Visit</span> &rarr;
+            </a>
+          </div>
 
-            <!-- Path 2: /hours -->
-            <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 text-sm">Weekly Hours Tracker</span>
-                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/hours</span>
-                  </div>
-                  <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                    Timesheet logging and compliance verification page for cross-checking hours entered in Jett vs Fieldglass.
-                  </p>
+          <div class="mt-3 pt-3 border-t border-slate-100">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
+            <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
+              <li><strong class="text-slate-800">Headers:</strong> <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ai UseCase</code>, <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Usege Count</code>, and Action buttons (<code class="font-bold text-emerald-600">+</code> / <code class="font-bold text-rose-600">&minus;</code>).</li>
+              <li><strong class="text-slate-800">Tracked Rows:</strong>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600 font-medium">
+                  <div>&bull; Deployment requests raised using kiro</div>
+                  <div>&bull; Bugs analyuzed using bug analyzer</div>
+                  <div>&bull; Orders raised using order creation tool</div>
+                  <div>&bull; Java upgrade agent use cases</div>
+                  <div>&bull; AI-SDLC use cases</div>
                 </div>
-                <a href="/hours" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
-                  <span>Visit</span> &rarr;
-                </a>
-              </div>
-
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
-                <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
-                  <li><strong class="text-slate-800">Title Banner:</strong> Displays current week with computed start date and end date (e.g. <span class="font-mono text-slate-700 font-semibold">Current Week: Oct 12 – Oct 18</span>).</li>
-                  <li><strong class="text-slate-800">Submission Form:</strong> Member Name input + Box 1 (Hours in Jett) + Box 2 (Hours in Fieldglass).</li>
-                  <li><strong class="text-slate-800">Live Team Table:</strong> Compares Jett vs Fieldglass per person, highlights Match vs Discrepancy diffs, and computes team totals.</li>
-                  <li><strong class="text-slate-800">Persistence:</strong> Synchronized to GitHub Gist under <code class="font-mono text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded">weekly-hours.json</code>.</li>
-                </ul>
-              </div>
-            </div>
-
+              </li>
+            </ul>
           </div>
         </div>
 
-        <!-- Section 2: Backend REST API Endpoints -->
-        <div class="pt-2">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Backend REST API Endpoints</div>
-          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2 text-xs">
-            
-            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
+        <!-- Path 2: /hours -->
+        <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
+          <div class="flex items-start justify-between gap-3">
+            <div>
               <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">GET</span>
-                <code class="font-mono text-slate-800">/api/stats</code>
+                <span class="font-bold text-slate-900 text-sm">Weekly Hours Tracker</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/hours</span>
               </div>
-              <span class="text-slate-500 text-[11px]">Returns latest AI use case counts & Gist connection status</span>
+              <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                Weekly timesheet logging and verification for hours entered in Jett vs Fieldglass.
+              </p>
             </div>
+            <a href="/hours" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
+              <span>Visit</span> &rarr;
+            </a>
+          </div>
 
-            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">POST</span>
-                <code class="font-mono text-slate-800">/api/stats/update</code>
-              </div>
-              <span class="text-slate-500 text-[11px]">Safely increments (+1) or decrements (-1) counts via mutex</span>
-            </div>
-
-            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">GET</span>
-                <code class="font-mono text-slate-800">/api/hours</code>
-              </div>
-              <span class="text-slate-500 text-[11px]">Returns current week range and member submitted hours</span>
-            </div>
-
-            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">POST</span>
-                <code class="font-mono text-slate-800">/api/hours</code>
-              </div>
-              <span class="text-slate-500 text-[11px]">Adds/updates member's Jett & Fieldglass hours in Gist</span>
-            </div>
-
-            <div class="flex items-center justify-between py-1">
-              <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">POST</span>
-                <code class="font-mono text-slate-800">/api/create-gist</code>
-              </div>
-              <span class="text-slate-500 text-[11px]">1-click creation of a new GitHub Gist with both JSON files</span>
-            </div>
-
+          <div class="mt-3 pt-3 border-t border-slate-100">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
+            <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
+              <li><strong class="text-slate-800">Title:</strong> Current week with computed start date and end date.</li>
+              <li><strong class="text-slate-800">Submission Form:</strong> Member Name + Hours in Jett + Hours in Fieldglass.</li>
+              <li><strong class="text-slate-800">Live Team Table:</strong> Compares Jett vs Fieldglass hours per person, shows balance/diff, and team totals.</li>
+            </ul>
           </div>
         </div>
 
@@ -411,7 +231,6 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
-    // Exact list of AI Use Cases requested
     const USE_CASES = [
       "No of deployment requests raised using kiro",
       "No of bugs analyuzed using bug analyzer",
@@ -421,22 +240,13 @@
     ];
 
     let currentStats = {};
-    let isConnected = false;
-    let gistId = null;
     let pendingUpdates = new Set();
 
-    // DOM Elements
     const tableBody = document.getElementById('tableBody');
-    const syncStatusBadge = document.getElementById('syncStatusBadge');
-    const syncStatusText = document.getElementById('syncStatusText');
-    const noticeBanner = document.getElementById('noticeBanner');
     const totalCountSummary = document.getElementById('totalCountSummary');
     const lastUpdatedSummary = document.getElementById('lastUpdatedSummary');
-    const gistLinkDisplay = document.getElementById('gistLinkDisplay');
-    const configModal = document.getElementById('configModal');
     const refreshIcon = document.getElementById('refreshIcon');
 
-    // Toast helper
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -455,17 +265,6 @@
       }, 3000);
     }
 
-    // Toggle Config Modal
-    function toggleConfigModal(show) {
-      if (show) {
-        configModal.classList.remove('hidden');
-      } else {
-        configModal.classList.add('hidden');
-        document.getElementById('modalAlert').classList.add('hidden');
-      }
-    }
-
-    // Render the Table
     function renderTable() {
       let total = 0;
       tableBody.innerHTML = '';
@@ -492,7 +291,6 @@
           </td>
           <td class="py-4 px-6 text-center">
             <div class="inline-flex items-center rounded-lg shadow-2xs border border-slate-200 overflow-hidden bg-white">
-              <!-- Decrement Button (-1) -->
               <button 
                 onclick="updateCount('${escapeQuote(useCase)}', -1, ${index})" 
                 ${isPending || count <= 0 ? 'disabled' : ''} 
@@ -501,7 +299,6 @@
                 &minus;
               </button>
               <div class="w-px h-5 bg-slate-200"></div>
-              <!-- Increment Button (+1) -->
               <button 
                 onclick="updateCount('${escapeQuote(useCase)}', 1, ${index})" 
                 ${isPending ? 'disabled' : ''} 
@@ -519,7 +316,6 @@
       lastUpdatedSummary.textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
     }
 
-    // Helper HTML escaping
     function escapeHtml(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
@@ -527,41 +323,6 @@
       return str.replace(/'/g, "\\'");
     }
 
-    // Update Status Pill
-    function updateStatusIndicator(connected, gId, hasToken = false) {
-      isConnected = connected;
-      gistId = gId;
-
-      if (connected && gId) {
-        syncStatusBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200";
-        syncStatusBadge.innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Gist Synced (${gId.substring(0, 7)}...)</span>
-        `;
-        noticeBanner.classList.add('hidden');
-        gistLinkDisplay.innerHTML = `<a href="https://gist.github.com/${gId}" target="_blank" class="text-indigo-600 hover:underline flex items-center gap-1"><span>Gist ${gId.substring(0, 7)}...</span> &nearr;</a>`;
-      } else if (hasToken) {
-        syncStatusBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200";
-        syncStatusBadge.innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-          <span>Token Configured</span>
-        `;
-        noticeBanner.classList.remove('hidden');
-        document.getElementById('noticeBannerText').textContent = "GitHub Token detected! Click Gist Config to auto-create or link your Gist with 1 click.";
-        gistLinkDisplay.textContent = "Token active (Awaiting Gist)";
-      } else {
-        syncStatusBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200";
-        syncStatusBadge.innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-          <span>In-Memory (Gist Not Configured)</span>
-        `;
-        noticeBanner.classList.remove('hidden');
-        document.getElementById('noticeBannerText').textContent = "Running in demo mode. Counts are kept in memory until you connect your GitHub Gist.";
-        gistLinkDisplay.textContent = "Not connected (In-memory)";
-      }
-    }
-
-    // Load Stats from Backend
     async function loadStats(silent = false) {
       if (!silent) {
         refreshIcon.classList.add('animate-spin');
@@ -571,16 +332,13 @@
         const data = await res.json();
         
         currentStats = data.stats || {};
-        // Fill defaults if any key missing
         USE_CASES.forEach(key => {
           if (currentStats[key] === undefined) currentStats[key] = 0;
         });
 
-        updateStatusIndicator(data.connected, data.gistId, data.hasToken);
         renderTable();
       } catch (err) {
         console.error('Failed to load stats:', err);
-        showToast('Failed to fetch stats: ' + err.message, 'error');
       } finally {
         if (!silent) {
           setTimeout(() => refreshIcon.classList.remove('animate-spin'), 300);
@@ -588,23 +346,20 @@
       }
     }
 
-    // Update Count (Increment +1 or Decrement -1)
     async function updateCount(useCase, delta, rowIndex) {
       if (pendingUpdates.has(useCase)) return;
 
       const previousValue = currentStats[useCase] || 0;
       const targetValue = Math.max(0, previousValue + delta);
 
-      // Optimistic Update
       currentStats[useCase] = targetValue;
       pendingUpdates.add(useCase);
       renderTable();
 
-      // Trigger bounce animation on badge
       const badge = document.getElementById(`badge-${rowIndex}`);
       if (badge) {
         badge.classList.remove('count-bump');
-        void badge.offsetWidth; // force reflow
+        void badge.offsetWidth;
         badge.classList.add('count-bump');
       }
 
@@ -616,109 +371,18 @@
         });
 
         const data = await res.json();
-        if (!data.success) {
-          throw new Error(data.error || 'Server rejected update');
+        if (data.stats) {
+          currentStats = data.stats;
         }
-
-        // Apply authoritative server state
-        currentStats = data.stats;
-        updateStatusIndicator(data.connected, data.gistId);
       } catch (err) {
-        // Rollback on error
-        console.error('Update failed:', err);
         currentStats[useCase] = previousValue;
-        showToast(`Failed to update count: ${err.message}`, 'error');
+        showToast('Unable to update count right now', 'error');
       } finally {
         pendingUpdates.delete(useCase);
         renderTable();
       }
     }
 
-    // Save Configuration from Modal
-    async function saveConfiguration() {
-      const githubToken = document.getElementById('cfgGithubToken').value.trim();
-      const gistId = document.getElementById('cfgGistId').value.trim();
-      const alertBox = document.getElementById('modalAlert');
-      const saveBtn = document.getElementById('saveConfigBtn');
-
-      if (!githubToken && !gistId) {
-        alertBox.className = "p-3 rounded-lg text-xs bg-rose-50 text-rose-800 border border-rose-200";
-        alertBox.textContent = "Please enter your GitHub Personal Access Token.";
-        alertBox.classList.remove('hidden');
-        return;
-      }
-
-      saveBtn.disabled = true;
-      saveBtn.textContent = gistId ? "Connecting..." : "Auto-connecting Gist...";
-
-      try {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ githubToken, gistId })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        showToast('Connected to GitHub Gist successfully!', 'success');
-        toggleConfigModal(false);
-        loadStats();
-      } catch (err) {
-        alertBox.className = "p-3 rounded-lg text-xs bg-rose-50 text-rose-800 border border-rose-200";
-        alertBox.textContent = "Connection failed: " + err.message;
-        alertBox.classList.remove('hidden');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save & Connect";
-      }
-    }
-
-    // Auto-create Gist using provided token
-    async function autoCreateGist() {
-      const githubToken = document.getElementById('cfgGithubToken').value.trim();
-      const alertBox = document.getElementById('modalAlert');
-      const createBtn = document.getElementById('createGistBtn');
-
-      if (!githubToken) {
-        alertBox.className = "p-3 rounded-lg text-xs bg-amber-50 text-amber-800 border border-amber-200";
-        alertBox.textContent = "Please paste your GitHub Personal Access Token first.";
-        alertBox.classList.remove('hidden');
-        return;
-      }
-
-      createBtn.disabled = true;
-      createBtn.textContent = "Creating Gist...";
-
-      try {
-        const res = await fetch('/api/create-gist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ githubToken })
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
-
-        document.getElementById('cfgGistId').value = data.gistId;
-        alertBox.className = "p-3 rounded-lg text-xs bg-emerald-50 text-emerald-800 border border-emerald-200";
-        alertBox.innerHTML = `Created Gist successfully! <a href="${data.gistUrl}" target="_blank" class="underline font-bold">View on GitHub</a>`;
-        alertBox.classList.remove('hidden');
-
-        showToast('Created Gist ' + data.gistId.substring(0, 7) + ' successfully!', 'success');
-        setTimeout(() => {
-          toggleConfigModal(false);
-          loadStats();
-        }, 1500);
-      } catch (err) {
-        alertBox.className = "p-3 rounded-lg text-xs bg-rose-50 text-rose-800 border border-rose-200";
-        alertBox.textContent = "Failed to create Gist: " + err.message;
-        alertBox.classList.remove('hidden');
-      } finally {
-        createBtn.disabled = false;
-        createBtn.textContent = "Auto-Create Gist";
-      }
-    }
-
-    // Toggle Available Paths Modal
     function togglePathsModal(show) {
       const modal = document.getElementById('pathsModal');
       if (!modal) return;
@@ -729,20 +393,14 @@
       }
     }
 
-    // Close modals on Escape key
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         togglePathsModal(false);
-        toggleConfigModal(false);
       }
     });
 
-    // Initialize
     loadStats();
-
-    // Auto-refresh every 12 seconds in the background
     setInterval(() => {
-      // only background refresh if not interacting right now
       if (pendingUpdates.size === 0) {
         loadStats(true);
       }
