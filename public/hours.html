@@ -268,7 +268,10 @@
         const syncBadge = document.getElementById('syncStatusBadge');
         if (data.connected && data.gistId) {
           syncBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200";
-          syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Gist Synced</span>`;
+          syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Gist Synced (${data.gistId.substring(0, 7)}...)</span>`;
+        } else if (data.hasToken) {
+          syncBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200";
+          syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Token Configured</span>`;
         } else {
           syncBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200";
           syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>In-Memory</span>`;

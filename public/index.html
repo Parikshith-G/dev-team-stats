@@ -528,7 +528,7 @@
     }
 
     // Update Status Pill
-    function updateStatusIndicator(connected, gId) {
+    function updateStatusIndicator(connected, gId, hasToken = false) {
       isConnected = connected;
       gistId = gId;
 
@@ -540,6 +540,15 @@
         `;
         noticeBanner.classList.add('hidden');
         gistLinkDisplay.innerHTML = `<a href="https://gist.github.com/${gId}" target="_blank" class="text-indigo-600 hover:underline flex items-center gap-1"><span>Gist ${gId.substring(0, 7)}...</span> &nearr;</a>`;
+      } else if (hasToken) {
+        syncStatusBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200";
+        syncStatusBadge.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+          <span>Token Configured</span>
+        `;
+        noticeBanner.classList.remove('hidden');
+        document.getElementById('noticeBannerText').textContent = "GitHub Token detected! Click Gist Config to auto-create or link your Gist with 1 click.";
+        gistLinkDisplay.textContent = "Token active (Awaiting Gist)";
       } else {
         syncStatusBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200";
         syncStatusBadge.innerHTML = `
@@ -547,6 +556,7 @@
           <span>In-Memory (Gist Not Configured)</span>
         `;
         noticeBanner.classList.remove('hidden');
+        document.getElementById('noticeBannerText').textContent = "Running in demo mode. Counts are kept in memory until you connect your GitHub Gist.";
         gistLinkDisplay.textContent = "Not connected (In-memory)";
       }
     }
@@ -566,7 +576,7 @@
           if (currentStats[key] === undefined) currentStats[key] = 0;
         });
 
-        updateStatusIndicator(data.connected, data.gistId);
+        updateStatusIndicator(data.connected, data.gistId, data.hasToken);
         renderTable();
       } catch (err) {
         console.error('Failed to load stats:', err);
@@ -631,15 +641,15 @@
       const alertBox = document.getElementById('modalAlert');
       const saveBtn = document.getElementById('saveConfigBtn');
 
-      if (!gistId) {
+      if (!githubToken && !gistId) {
         alertBox.className = "p-3 rounded-lg text-xs bg-rose-50 text-rose-800 border border-rose-200";
-        alertBox.textContent = "Please enter your Gist ID.";
+        alertBox.textContent = "Please enter your GitHub Personal Access Token.";
         alertBox.classList.remove('hidden');
         return;
       }
 
       saveBtn.disabled = true;
-      saveBtn.textContent = "Connecting...";
+      saveBtn.textContent = gistId ? "Connecting..." : "Auto-connecting Gist...";
 
       try {
         const res = await fetch('/api/config', {

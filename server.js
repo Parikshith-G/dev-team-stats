@@ -82,15 +82,87 @@ function getHeaders(token) {
   };
 }
 
+// Automatically find or create the Gist using the token if GIST_ID is not provided
+async function ensureGistId() {
+  const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
+  if (!token) return null;
+
+  if (runtimeConfig.gistId && runtimeConfig.gistId.trim()) {
+    return runtimeConfig.gistId.trim();
+  }
+  if (process.env.GIST_ID && process.env.GIST_ID.trim()) {
+    runtimeConfig.gistId = process.env.GIST_ID.trim();
+    return runtimeConfig.gistId;
+  }
+
+  try {
+    console.log('[Gist Setup] Checking GitHub account for existing Dev Team Stats Gist...');
+    const listRes = await fetch('https://api.github.com/gists?per_page=50', {
+      headers: getHeaders(token)
+    });
+
+    if (listRes.ok) {
+      const gists = await listRes.json();
+      const existing = gists.find(g => 
+        (g.files && (g.files[GIST_FILENAME] || g.files[GIST_HOURS_FILENAME])) || 
+        (g.description && g.description.toLowerCase().includes('dev team stats'))
+      );
+      if (existing) {
+        console.log(`[Gist Setup] Found existing Gist: ${existing.id}`);
+        runtimeConfig.gistId = existing.id;
+        return existing.id;
+      }
+    } else {
+      console.warn(`[Gist Setup] GitHub API returned status ${listRes.status} when querying gists.`);
+    }
+
+    // Auto-create if not found
+    console.log('[Gist Setup] Auto-creating a new Gist using your token...');
+    const initialStats = JSON.stringify(memoryStats, null, 2);
+    const initialHours = JSON.stringify({ week: getCurrentWeekRange(), entries: [] }, null, 2);
+
+    const createRes = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: getHeaders(token),
+      body: JSON.stringify({
+        description: 'Dev Team Stats (AI Use Cases & Weekly Hours)',
+        public: false,
+        files: {
+          [GIST_FILENAME]: { content: initialStats },
+          [GIST_HOURS_FILENAME]: { content: initialHours }
+        }
+      })
+    });
+
+    if (createRes.ok) {
+      const createdData = await createRes.json();
+      console.log(`[Gist Setup] Successfully auto-created Gist: ${createdData.id}`);
+      runtimeConfig.gistId = createdData.id;
+      return createdData.id;
+    } else {
+      const errText = await createRes.text();
+      console.error('[Gist Setup] Failed to auto-create Gist:', errText);
+    }
+  } catch (err) {
+    console.error('[Gist Setup] Error auto-discovering/creating Gist:', err.message);
+  }
+
+  return runtimeConfig.gistId || null;
+}
+
 // Fetch stats from Gist
 async function fetchGistStats() {
   const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
-  const gistId = runtimeConfig.gistId || process.env.GIST_ID;
+  let gistId = runtimeConfig.gistId || process.env.GIST_ID;
+
+  if (!gistId && token) {
+    gistId = await ensureGistId();
+  }
 
   if (!gistId) {
     return {
       connected: false,
-      reason: 'Gist ID is not configured',
+      reason: token ? 'Token present, but failed to connect to or create Gist (check token permissions)' : 'GitHub Token and Gist are not configured',
       stats: memoryStats
     };
   }
@@ -153,13 +225,16 @@ async function fetchGistStats() {
 // Write stats to Gist
 async function writeGistStats(newStats) {
   const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
-  const gistId = runtimeConfig.gistId || process.env.GIST_ID;
+  let gistId = runtimeConfig.gistId || process.env.GIST_ID;
 
   if (!token) {
     throw new Error('GitHub Token is missing. A token with "gist" scope is required.');
   }
   if (!gistId) {
-    throw new Error('Gist ID is missing. Please configure GIST_ID.');
+    gistId = await ensureGistId();
+  }
+  if (!gistId) {
+    throw new Error('Gist ID could not be determined. Please verify your token permissions.');
   }
 
   const content = JSON.stringify(newStats, null, 2);
@@ -194,13 +269,17 @@ async function writeGistStats(newStats) {
 // Fetch Weekly Hours from Gist
 async function fetchGistHours() {
   const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
-  const gistId = runtimeConfig.gistId || process.env.GIST_ID;
+  let gistId = runtimeConfig.gistId || process.env.GIST_ID;
   const weekInfo = getCurrentWeekRange();
+
+  if (!gistId && token) {
+    gistId = await ensureGistId();
+  }
 
   if (!gistId) {
     return {
       connected: false,
-      reason: 'Gist ID is not configured',
+      reason: token ? 'Token present, but Gist could not be found or created' : 'GitHub Token and Gist are not configured',
       week: weekInfo,
       entries: memoryHours.entries || []
     };
@@ -258,13 +337,16 @@ async function fetchGistHours() {
 // Write Weekly Hours to Gist
 async function writeGistHours(hoursData) {
   const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
-  const gistId = runtimeConfig.gistId || process.env.GIST_ID;
+  let gistId = runtimeConfig.gistId || process.env.GIST_ID;
 
   if (!token) {
     throw new Error('GitHub Token is missing.');
   }
   if (!gistId) {
-    throw new Error('Gist ID is missing.');
+    gistId = await ensureGistId();
+  }
+  if (!gistId) {
+    throw new Error('Gist ID could not be determined. Please verify your token permissions.');
   }
 
   const content = JSON.stringify(hoursData, null, 2);
@@ -519,6 +601,11 @@ app.post('/api/config', async (req, res) => {
 
   if (githubToken !== undefined) runtimeConfig.githubToken = githubToken.trim();
   if (gistId !== undefined) runtimeConfig.gistId = gistId.trim();
+
+  // If token is provided without a gistId, auto-discover or auto-create it!
+  if (runtimeConfig.githubToken && !runtimeConfig.gistId) {
+    await ensureGistId();
+  }
 
   try {
     const result = await fetchGistStats();
