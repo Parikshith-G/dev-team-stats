@@ -46,6 +46,14 @@
           <span id="syncStatusText">Checking Gist...</span>
         </div>
 
+        <!-- Paths Directory Button -->
+        <button onclick="togglePathsModal(true)" class="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all shadow-xs" title="View available paths and what they contain">
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+          </svg>
+          <span>Available Paths</span>
+        </button>
+
         <button onclick="loadHours()" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Refresh">
           <svg class="w-4 h-4" id="refreshIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -395,9 +403,181 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
+    function togglePathsModal(show) {
+      const modal = document.getElementById('pathsModal');
+      if (!modal) return;
+      if (show) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        togglePathsModal(false);
+      }
+    });
+
     loadHours();
     // Auto-refresh every 15s
     setInterval(loadHours, 15000);
   </script>
+
+  <!-- Available Paths Directory Modal -->
+  <div id="pathsModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" onclick="togglePathsModal(false)">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/75">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Application Routes Directory</h3>
+            <p class="text-xs text-slate-500">Available paths and what each one contains</p>
+          </div>
+        </div>
+        <button onclick="togglePathsModal(false)" class="text-slate-400 hover:text-slate-700 text-2xl leading-none p-1">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Section 1: User Frontend Pages -->
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">User Frontend Pages</div>
+          <div class="space-y-3">
+            
+            <!-- Path 1: /ai-stats -->
+            <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-900 text-sm">AI Use Cases Tracker</span>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/ai-stats</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-100">or /</span>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                    Interactive real-time table tracking team usage of AI tools with concurrency-safe increment and decrement buttons (+1 / -1).
+                  </p>
+                </div>
+                <a href="/ai-stats" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
+                  <span>Visit</span> &rarr;
+                </a>
+              </div>
+
+              <div class="mt-3 pt-3 border-t border-slate-100">
+                <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
+                <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
+                  <li><strong class="text-slate-800">Headers:</strong> <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ai UseCase</code>, <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Usege Count</code>, and Action buttons (<code class="font-bold text-emerald-600">+</code> / <code class="font-bold text-rose-600">&minus;</code>).</li>
+                  <li><strong class="text-slate-800">Tracked Rows:</strong>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600 font-medium">
+                      <div>&bull; Deployment requests raised using kiro</div>
+                      <div>&bull; Bugs analyuzed using bug analyzer</div>
+                      <div>&bull; Orders raised using order creation tool</div>
+                      <div>&bull; Java upgrade agent use cases</div>
+                      <div>&bull; AI-SDLC use cases</div>
+                    </div>
+                  </li>
+                  <li><strong class="text-slate-800">Persistence:</strong> Synchronized to GitHub Gist under <code class="font-mono text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded">ai-stats.json</code>.</li>
+                  <li><strong class="text-slate-800">Safety:</strong> Mutex-queued updates prevent race conditions and lost counts.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Path 2: /hours -->
+            <div class="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-900 text-sm">Weekly Hours Tracker</span>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-100 text-indigo-700">/hours</span>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                    Timesheet logging and compliance verification page for cross-checking hours entered in Jett vs Fieldglass.
+                  </p>
+                </div>
+                <a href="/hours" class="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
+                  <span>Visit</span> &rarr;
+                </a>
+              </div>
+
+              <div class="mt-3 pt-3 border-t border-slate-100">
+                <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
+                <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
+                  <li><strong class="text-slate-800">Title Banner:</strong> Displays current week with computed start date and end date (e.g. <span class="font-mono text-slate-700 font-semibold">Current Week: Oct 12 – Oct 18</span>).</li>
+                  <li><strong class="text-slate-800">Submission Form:</strong> Member Name input + Box 1 (Hours in Jett) + Box 2 (Hours in Fieldglass).</li>
+                  <li><strong class="text-slate-800">Live Team Table:</strong> Compares Jett vs Fieldglass per person, highlights Match vs Discrepancy diffs, and computes team totals.</li>
+                  <li><strong class="text-slate-800">Persistence:</strong> Synchronized to GitHub Gist under <code class="font-mono text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded">weekly-hours.json</code>.</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 2: Backend REST API Endpoints -->
+        <div class="pt-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Backend REST API Endpoints</div>
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2 text-xs">
+            
+            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">GET</span>
+                <code class="font-mono text-slate-800">/api/stats</code>
+              </div>
+              <span class="text-slate-500 text-[11px]">Returns latest AI use case counts & Gist connection status</span>
+            </div>
+
+            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">POST</span>
+                <code class="font-mono text-slate-800">/api/stats/update</code>
+              </div>
+              <span class="text-slate-500 text-[11px]">Safely increments (+1) or decrements (-1) counts via mutex</span>
+            </div>
+
+            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">GET</span>
+                <code class="font-mono text-slate-800">/api/hours</code>
+              </div>
+              <span class="text-slate-500 text-[11px]">Returns current week range and member submitted hours</span>
+            </div>
+
+            <div class="flex items-center justify-between py-1 border-b border-slate-200/60">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">POST</span>
+                <code class="font-mono text-slate-800">/api/hours</code>
+              </div>
+              <span class="text-slate-500 text-[11px]">Adds/updates member's Jett & Fieldglass hours in Gist</span>
+            </div>
+
+            <div class="flex items-center justify-between py-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">POST</span>
+                <code class="font-mono text-slate-800">/api/create-gist</code>
+              </div>
+              <span class="text-slate-500 text-[11px]">1-click creation of a new GitHub Gist with both JSON files</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="togglePathsModal(false)" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs">
+          Close Directory
+        </button>
+      </div>
+
+    </div>
+  </div>
 </body>
 </html>
