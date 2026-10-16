@@ -195,13 +195,12 @@
               <th scope="col" class="py-3.5 px-6">Name</th>
               <th scope="col" class="py-3.5 px-6 text-center">Hours in Jett</th>
               <th scope="col" class="py-3.5 px-6 text-center">Hours in Fieldglass</th>
-              <th scope="col" class="py-3.5 px-6 text-center">Match Status</th>
               <th scope="col" class="py-3.5 px-6 text-center w-28">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200" id="hoursTableBody">
             <tr>
-              <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+              <td colspan="4" class="py-10 text-center text-slate-400 text-xs">
                 No hours submitted yet for this week. Use the form above to submit.
               </td>
             </tr>
@@ -211,7 +210,6 @@
               <td class="py-3 px-6 text-slate-700">Team Total</td>
               <td class="py-3 px-6 text-center font-mono-numbers text-indigo-700" id="totalJett">0 hrs</td>
               <td class="py-3 px-6 text-center font-mono-numbers text-indigo-700" id="totalFieldglass">0 hrs</td>
-              <td class="py-3 px-6 text-center" id="totalMatchStatus">--</td>
               <td></td>
             </tr>
           </tfoot>
@@ -300,7 +298,7 @@
             <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
               <li><strong class="text-slate-800">Title:</strong> Current week with computed start date and end date.</li>
               <li><strong class="text-slate-800">Submission Form:</strong> Member Name + Hours in Jett + Hours in Fieldglass.</li>
-              <li><strong class="text-slate-800">Live Team Table:</strong> Compares Jett vs Fieldglass hours per person, shows balance/diff, and team totals.</li>
+              <li><strong class="text-slate-800">Live Team Table:</strong> Displays Jett and Fieldglass hours per member with team totals.</li>
             </ul>
           </div>
         </div>
@@ -375,14 +373,13 @@
       if (!entries || entries.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+            <td colspan="4" class="py-10 text-center text-slate-400 text-xs">
               No hours submitted yet for this week. Use the form above to submit.
             </td>
           </tr>
         `;
         document.getElementById('totalJett').textContent = "0 hrs";
         document.getElementById('totalFieldglass').textContent = "0 hrs";
-        document.getElementById('totalMatchStatus').innerHTML = "--";
         return;
       }
 
@@ -395,11 +392,6 @@
         const fg = Number(entry.fieldglassHours) || 0;
         sumJett += jett;
         sumFieldglass += fg;
-
-        const isMatch = jett === fg;
-        const matchBadge = isMatch 
-          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Match (${jett}h)</span>`
-          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Diff (${Math.abs(jett - fg)}h)</span>`;
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50/80 transition-colors";
@@ -414,9 +406,6 @@
             ${fg} hrs
           </td>
           <td class="py-3.5 px-6 text-center">
-            ${matchBadge}
-          </td>
-          <td class="py-3.5 px-6 text-center">
             <button onclick="deleteEntry('${entry.id}', '${escapeHtml(entry.name)}')" class="text-xs text-rose-600 hover:text-rose-800 hover:underline font-medium">
               Remove
             </button>
@@ -427,9 +416,6 @@
 
       document.getElementById('totalJett').textContent = `${sumJett} hrs`;
       document.getElementById('totalFieldglass').textContent = `${sumFieldglass} hrs`;
-      document.getElementById('totalMatchStatus').innerHTML = sumJett === sumFieldglass 
-        ? `<span class="text-emerald-700 font-bold">&check; Balanced</span>`
-        : `<span class="text-amber-700 font-bold">&Delta; ${Math.abs(sumJett - sumFieldglass)}h diff</span>`;
     }
 
     async function handleSubmit(e) {
