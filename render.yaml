@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: dev-team-stats
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GIST_ID
+        sync: false

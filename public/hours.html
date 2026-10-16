@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Hours Tracker (Jett & Fieldglass)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono-numbers { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col antialiased">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Navigation -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            DT
+          </div>
+          <span class="font-bold text-slate-900 tracking-tight text-base">Dev Team Stats</span>
+        </div>
+
+        <nav class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+          <a href="/ai-stats" class="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-md transition-colors">
+            AI Use Cases
+          </a>
+          <a href="/hours" class="px-3 py-1.5 bg-white text-indigo-700 rounded-md shadow-2xs font-bold">
+            Weekly Hours
+          </a>
+        </nav>
+      </div>
+
+      <!-- Sync Status & Actions -->
+      <div class="flex items-center gap-2">
+        <div id="syncStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span id="syncStatusText">Checking Gist...</span>
+        </div>
+
+        <button onclick="loadHours()" class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" title="Refresh">
+          <svg class="w-4 h-4" id="refreshIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Title Section: Current Week, Start of Week, End of Week -->
+    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="inline-block px-2.5 py-1 bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+            Timesheet Compliance
+          </span>
+          <!-- Requested Title format: current week and start of week and end of week -->
+          <h1 id="weekMainTitle" class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Current Week: Loading...
+          </h1>
+          <p class="text-indigo-200 text-xs sm:text-sm mt-1">
+            Fill your logged hours for both Jett and Fieldglass. All entries are preserved in GitHub Gist.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 bg-white/10 backdrop-blur-xs border border-white/15 px-4 py-3 rounded-xl">
+          <div class="text-center">
+            <div class="text-[10px] text-indigo-300 uppercase font-semibold">Start of Week</div>
+            <div id="startOfWeekLabel" class="text-sm font-bold font-mono-numbers mt-0.5">--</div>
+          </div>
+          <div class="text-indigo-400 font-bold">&rarr;</div>
+          <div class="text-center">
+            <div class="text-[10px] text-indigo-300 uppercase font-semibold">End of Week</div>
+            <div id="endOfWeekLabel" class="text-sm font-bold font-mono-numbers mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-6">
+      <div class="border-b border-slate-100 pb-4 mb-5">
+        <h2 class="text-base font-bold text-slate-900">Add or Update Your Hours</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Enter your name and hours filled in Jett and Fieldglass.</p>
+      </div>
+
+      <form id="hoursForm" onsubmit="handleSubmit(event)" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          
+          <!-- Name Input -->
+          <div>
+            <label for="memberName" class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
+              Your Name <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="memberName" 
+              required 
+              placeholder="e.g. Parikshith" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+            >
+          </div>
+
+          <!-- Box 1: Hours filled in Jett -->
+          <div>
+            <label for="jettHours" class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span>Hours in Jett</span>
+              <span class="text-[11px] text-indigo-600 font-normal lowercase font-mono">Box 1</span>
+            </label>
+            <input 
+              type="number" 
+              id="jettHours" 
+              step="0.5" 
+              min="0" 
+              max="168" 
+              required 
+              placeholder="e.g. 40" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono-numbers text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-semibold"
+            >
+          </div>
+
+          <!-- Box 2: Hours filled in Fieldglass -->
+          <div>
+            <label for="fieldglassHours" class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span>Hours in Fieldglass</span>
+              <span class="text-[11px] text-indigo-600 font-normal lowercase font-mono">Box 2</span>
+            </label>
+            <input 
+              type="number" 
+              id="fieldglassHours" 
+              step="0.5" 
+              min="0" 
+              max="168" 
+              required 
+              placeholder="e.g. 40" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono-numbers text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-semibold"
+            >
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div class="text-xs text-slate-400">
+            Tip: Entering an existing member's name updates their entry automatically.
+          </div>
+          <button 
+            type="submit" 
+            id="submitBtn" 
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-xs transition-colors shadow-sm flex items-center gap-2">
+            <span>Save Hours</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Submissions Table Card -->
+    <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-slate-800">Team Timesheet Submissions</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Logged hours for the current week</p>
+        </div>
+        <div class="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+          <span id="memberCount">0</span> Team Members Submitted
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" id="hoursTable">
+          <thead>
+            <tr class="bg-slate-100/75 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <th scope="col" class="py-3.5 px-6">Name</th>
+              <th scope="col" class="py-3.5 px-6 text-center">Hours in Jett</th>
+              <th scope="col" class="py-3.5 px-6 text-center">Hours in Fieldglass</th>
+              <th scope="col" class="py-3.5 px-6 text-center">Match Status</th>
+              <th scope="col" class="py-3.5 px-6 text-center w-28">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200" id="hoursTableBody">
+            <tr>
+              <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+                No hours submitted yet for this week. Use the form above to submit.
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-slate-50 font-semibold text-xs border-t border-slate-200" id="hoursTableFoot">
+            <tr>
+              <td class="py-3 px-6 text-slate-700">Team Total</td>
+              <td class="py-3 px-6 text-center font-mono-numbers text-indigo-700" id="totalJett">0 hrs</td>
+              <td class="py-3 px-6 text-center font-mono-numbers text-indigo-700" id="totalFieldglass">0 hrs</td>
+              <td class="py-3 px-6 text-center" id="totalMatchStatus">--</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    let entries = [];
+    let weekData = null;
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgColor = type === 'error' ? 'bg-rose-600' : (type === 'success' ? 'bg-emerald-600' : 'bg-slate-800');
+      toast.className = `${bgColor} text-white text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    async function loadHours() {
+      const refreshIcon = document.getElementById('refreshIcon');
+      refreshIcon.classList.add('animate-spin');
+
+      try {
+        const res = await fetch('/api/hours');
+        const data = await res.json();
+
+        weekData = data.week;
+        entries = data.entries || [];
+
+        // Update Title with Current Week, Start of Week, and End of Week
+        if (weekData) {
+          document.getElementById('weekMainTitle').textContent = `Current Week: ${weekData.startDate} – ${weekData.endDate}`;
+          document.getElementById('startOfWeekLabel').textContent = weekData.startDate;
+          document.getElementById('endOfWeekLabel').textContent = weekData.endDate;
+        }
+
+        // Status pill
+        const syncBadge = document.getElementById('syncStatusBadge');
+        if (data.connected && data.gistId) {
+          syncBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200";
+          syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Gist Synced</span>`;
+        } else {
+          syncBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200";
+          syncBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>In-Memory</span>`;
+        }
+
+        renderTable();
+      } catch (err) {
+        showToast('Failed to load weekly hours: ' + err.message, 'error');
+      } finally {
+        setTimeout(() => refreshIcon.classList.remove('animate-spin'), 300);
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('hoursTableBody');
+      const memberCount = document.getElementById('memberCount');
+      memberCount.textContent = entries.length;
+
+      if (!entries || entries.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+              No hours submitted yet for this week. Use the form above to submit.
+            </td>
+          </tr>
+        `;
+        document.getElementById('totalJett').textContent = "0 hrs";
+        document.getElementById('totalFieldglass').textContent = "0 hrs";
+        document.getElementById('totalMatchStatus').innerHTML = "--";
+        return;
+      }
+
+      let sumJett = 0;
+      let sumFieldglass = 0;
+      tbody.innerHTML = '';
+
+      entries.forEach((entry) => {
+        const jett = Number(entry.jettHours) || 0;
+        const fg = Number(entry.fieldglassHours) || 0;
+        sumJett += jett;
+        sumFieldglass += fg;
+
+        const isMatch = jett === fg;
+        const matchBadge = isMatch 
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Match (${jett}h)</span>`
+          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Diff (${Math.abs(jett - fg)}h)</span>`;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition-colors";
+        tr.innerHTML = `
+          <td class="py-3.5 px-6 font-semibold text-slate-800 text-sm">
+            ${escapeHtml(entry.name)}
+          </td>
+          <td class="py-3.5 px-6 text-center font-mono-numbers font-semibold text-indigo-700 text-sm">
+            ${jett} hrs
+          </td>
+          <td class="py-3.5 px-6 text-center font-mono-numbers font-semibold text-slate-700 text-sm">
+            ${fg} hrs
+          </td>
+          <td class="py-3.5 px-6 text-center">
+            ${matchBadge}
+          </td>
+          <td class="py-3.5 px-6 text-center">
+            <button onclick="deleteEntry('${entry.id}', '${escapeHtml(entry.name)}')" class="text-xs text-rose-600 hover:text-rose-800 hover:underline font-medium">
+              Remove
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('totalJett').textContent = `${sumJett} hrs`;
+      document.getElementById('totalFieldglass').textContent = `${sumFieldglass} hrs`;
+      document.getElementById('totalMatchStatus').innerHTML = sumJett === sumFieldglass 
+        ? `<span class="text-emerald-700 font-bold">&check; Balanced</span>`
+        : `<span class="text-amber-700 font-bold">&Delta; ${Math.abs(sumJett - sumFieldglass)}h diff</span>`;
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      const name = document.getElementById('memberName').value.trim();
+      const jettHours = document.getElementById('jettHours').value;
+      const fieldglassHours = document.getElementById('fieldglassHours').value;
+
+      if (!name) return;
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50');
+
+      try {
+        const res = await fetch('/api/hours', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, jettHours, fieldglassHours })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        showToast(`Hours saved for ${name}!`, 'success');
+        document.getElementById('memberName').value = '';
+        document.getElementById('jettHours').value = '';
+        document.getElementById('fieldglassHours').value = '';
+
+        entries = data.entries || [];
+        renderTable();
+      } catch (err) {
+        showToast('Error saving hours: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+      }
+    }
+
+    async function deleteEntry(id, name) {
+      if (!confirm(`Are you sure you want to remove the hours for ${name}?`)) return;
+
+      try {
+        const res = await fetch(`/api/hours/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        showToast(`Removed entry for ${name}`, 'info');
+        entries = data.entries || [];
+        renderTable();
+      } catch (err) {
+        showToast('Failed to delete: ' + err.message, 'error');
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    loadHours();
+    // Auto-refresh every 15s
+    setInterval(loadHours, 15000);
+  </script>
+</body>
+</html>
