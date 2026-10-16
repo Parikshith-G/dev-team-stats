@@ -89,7 +89,7 @@
       <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-base font-semibold text-slate-800">Use Cases & Usage Activity</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Type numbers directly or click + / &minus; to update counts in real time.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Total counts are fixed. Use +1 / &minus;1 or enter a number to add directly to the total.</p>
         </div>
         <div class="text-xs text-slate-500 flex items-center gap-1.5">
           <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -103,8 +103,8 @@
           <thead>
             <tr class="bg-slate-100/75 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
               <th scope="col" class="py-3.5 px-6">Ai UseCase</th>
-              <th scope="col" class="py-3.5 px-6 text-center w-40">Usege Count</th>
-              <th scope="col" class="py-3.5 px-6 text-center w-44">Actions</th>
+              <th scope="col" class="py-3.5 px-6 text-center w-36">Total Count</th>
+              <th scope="col" class="py-3.5 px-6 text-center w-80">Add to Total</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200" id="tableBody">
@@ -174,7 +174,7 @@
           <div class="mt-3 pt-3 border-t border-slate-100">
             <div class="text-[11px] font-semibold text-slate-500 mb-1.5">What it contains:</div>
             <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-500">
-              <li><strong class="text-slate-800">Headers:</strong> <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ai UseCase</code>, <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Usege Count</code>, and Action buttons (<code class="font-bold text-emerald-600">+</code> / <code class="font-bold text-rose-600">&minus;</code>).</li>
+              <li><strong class="text-slate-800">Headers:</strong> <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Ai UseCase</code>, <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Total Count</code>, and <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">Add to Total</code> (<code class="font-bold text-emerald-600">+1</code> / <code class="font-bold text-rose-600">&minus;1</code> / custom number input).</li>
               <li><strong class="text-slate-800">Tracked Rows:</strong>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 text-[11px] text-slate-600 font-medium">
                   <div>&bull; Deployment requests raised using kiro</div>
@@ -267,6 +267,14 @@
 
     function renderTable() {
       let total = 0;
+
+      // Preserve any actively typed values in add-input fields
+      const preservedValues = {};
+      USE_CASES.forEach((_, idx) => {
+        const inp = document.getElementById(`add-input-${idx}`);
+        if (inp && inp.value) preservedValues[idx] = inp.value;
+      });
+
       tableBody.innerHTML = '';
 
       USE_CASES.forEach((useCase, index) => {
@@ -284,43 +292,67 @@
             </span>
             <span class="leading-relaxed select-text">${escapeHtml(useCase)}</span>
           </td>
+          <!-- Fixed Total Count Column (Uneditable) -->
           <td class="py-4 px-6 text-center">
-            <div class="inline-flex items-center justify-center">
-              <input 
-                type="number" 
-                min="0"
-                step="1"
-                id="input-${index}"
-                value="${count}" 
-                onchange="handleDirectInput('${escapeQuote(useCase)}', this.value, ${index})"
-                onkeydown="if(event.key === 'Enter') { this.blur(); }"
-                ${isPending ? 'disabled' : ''}
-                class="w-20 text-center py-1.5 px-2 text-sm font-bold font-mono-numbers bg-indigo-50/70 hover:bg-white focus:bg-white text-indigo-700 border border-indigo-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-2xs hover:border-indigo-400"
-                title="Type a number directly or click + / &minus;"
-              />
-            </div>
+            <span 
+              id="total-badge-${index}" 
+              class="inline-flex items-center justify-center min-w-16 px-3.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 font-bold font-mono-numbers text-base shadow-2xs select-text">
+              ${count}
+            </span>
           </td>
+          <!-- Add to Total Column -->
           <td class="py-4 px-6 text-center">
-            <div class="inline-flex items-center rounded-lg shadow-2xs border border-slate-200 overflow-hidden bg-white">
-              <button 
-                onclick="updateCount('${escapeQuote(useCase)}', -1, ${index})" 
-                ${isPending || count <= 0 ? 'disabled' : ''} 
-                class="px-3 py-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-slate-700 transition-colors text-sm font-bold flex items-center justify-center focus:outline-hidden"
-                title="Decrease by 1">
-                &minus;
-              </button>
-              <div class="w-px h-5 bg-slate-200"></div>
-              <button 
-                onclick="updateCount('${escapeQuote(useCase)}', 1, ${index})" 
-                ${isPending ? 'disabled' : ''} 
-                class="px-3 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-slate-700 transition-colors text-sm font-bold flex items-center justify-center focus:outline-hidden"
-                title="Increase by 1">
-                +
-              </button>
+            <div class="inline-flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap">
+              <!-- Quick -1 / +1 buttons -->
+              <div class="inline-flex items-center rounded-lg shadow-2xs border border-slate-200 bg-white">
+                <button 
+                  onclick="updateCount('${escapeQuote(useCase)}', -1, ${index})" 
+                  ${isPending || count <= 0 ? 'disabled' : ''} 
+                  class="px-2.5 py-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-slate-700 transition-colors text-xs font-bold flex items-center justify-center focus:outline-hidden"
+                  title="Subtract 1 from Total Count">
+                  &minus;1
+                </button>
+                <div class="w-px h-5 bg-slate-200"></div>
+                <button 
+                  onclick="updateCount('${escapeQuote(useCase)}', 1, ${index})" 
+                  ${isPending ? 'disabled' : ''} 
+                  class="px-2.5 py-1.5 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-slate-700 transition-colors text-xs font-bold flex items-center justify-center focus:outline-hidden"
+                  title="Add 1 to Total Count">
+                  +1
+                </button>
+              </div>
+
+              <span class="text-xs text-slate-300 font-medium hidden sm:inline">|</span>
+
+              <!-- Custom number input + Add button -->
+              <div class="inline-flex items-center rounded-lg shadow-2xs border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
+                <input 
+                  type="number" 
+                  id="add-input-${index}" 
+                  placeholder="e.g. 5" 
+                  step="1"
+                  ${isPending ? 'disabled' : ''}
+                  class="w-20 px-2 py-1.5 text-xs font-semibold text-slate-800 placeholder-slate-400 text-center outline-hidden border-none"
+                  onkeydown="if(event.key === 'Enter') { event.preventDefault(); handleAddCustom('${escapeQuote(useCase)}', ${index}); }"
+                  title="Type a number to add to total count"
+                />
+                <button 
+                  onclick="handleAddCustom('${escapeQuote(useCase)}', ${index})"
+                  ${isPending ? 'disabled' : ''}
+                  class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer">
+                  <span>+ Add</span>
+                </button>
+              </div>
             </div>
           </td>
         `;
         tableBody.appendChild(tr);
+
+        // Restore preserved input value if any
+        if (preservedValues[index]) {
+          const inp = document.getElementById(`add-input-${index}`);
+          if (inp) inp.value = preservedValues[index];
+        }
       });
 
       totalCountSummary.innerHTML = `Total Usage: <span class="font-semibold text-slate-900 font-mono-numbers">${total}</span> across all use cases`;
@@ -349,7 +381,7 @@
 
         // Don't re-render and overwrite if user is currently typing in an input
         const activeEl = document.activeElement;
-        const isUserTyping = activeEl && activeEl.tagName === 'INPUT' && activeEl.id.startsWith('input-');
+        const isUserTyping = activeEl && activeEl.tagName === 'INPUT' && activeEl.id.startsWith('add-input-');
         if (!isUserTyping) {
           renderTable();
         }
@@ -362,44 +394,21 @@
       }
     }
 
-    // Direct number input change handler
-    async function handleDirectInput(useCase, newValue, rowIndex) {
+    // Add custom typed number to Total Count
+    async function handleAddCustom(useCase, rowIndex) {
       if (pendingUpdates.has(useCase)) return;
 
-      const previousValue = currentStats[useCase] || 0;
-      const parsedValue = Math.max(0, parseInt(newValue, 10) || 0);
+      const input = document.getElementById(`add-input-${rowIndex}`);
+      if (!input) return;
 
-      if (parsedValue === previousValue) return;
-
-      currentStats[useCase] = parsedValue;
-      pendingUpdates.add(useCase);
-      renderTable();
-
-      const input = document.getElementById(`input-${rowIndex}`);
-      if (input) {
-        input.classList.remove('count-bump');
-        void input.offsetWidth;
-        input.classList.add('count-bump');
+      const deltaVal = parseInt(input.value, 10);
+      if (isNaN(deltaVal) || deltaVal === 0) {
+        showToast('Please enter a number to add', 'info');
+        return;
       }
 
-      try {
-        const res = await fetch('/api/stats/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ useCase, value: parsedValue })
-        });
-
-        const data = await res.json();
-        if (data.stats) {
-          currentStats = data.stats;
-        }
-      } catch (err) {
-        currentStats[useCase] = previousValue;
-        showToast('Unable to update count right now', 'error');
-      } finally {
-        pendingUpdates.delete(useCase);
-        renderTable();
-      }
+      input.value = '';
+      await updateCount(useCase, deltaVal, rowIndex);
     }
 
     async function updateCount(useCase, delta, rowIndex) {
@@ -412,11 +421,11 @@
       pendingUpdates.add(useCase);
       renderTable();
 
-      const input = document.getElementById(`input-${rowIndex}`);
-      if (input) {
-        input.classList.remove('count-bump');
-        void input.offsetWidth;
-        input.classList.add('count-bump');
+      const badge = document.getElementById(`total-badge-${rowIndex}`);
+      if (badge) {
+        badge.classList.remove('count-bump');
+        void badge.offsetWidth;
+        badge.classList.add('count-bump');
       }
 
       try {
@@ -430,6 +439,8 @@
         if (data.stats) {
           currentStats = data.stats;
         }
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        showToast(`${sign} added to total count`, 'success');
       } catch (err) {
         currentStats[useCase] = previousValue;
         showToast('Unable to update count right now', 'error');
