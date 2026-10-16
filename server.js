@@ -517,13 +517,21 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // POST /api/stats/update (Serialized queue)
+// Supports both delta (+1, -1) and direct value setting
 app.post('/api/stats/update', async (req, res) => {
-  const { useCase, delta } = req.body;
+  const { useCase, delta, value } = req.body;
 
-  if (!useCase || (delta !== 1 && delta !== -1)) {
+  if (!useCase) {
     return res.status(400).json({
       success: false,
-      error: 'Invalid request: "useCase" string and "delta" (+1 or -1) are required.'
+      error: 'Invalid request: "useCase" string is required.'
+    });
+  }
+
+  if (delta === undefined && value === undefined) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid request: either "delta" (+1/-1) or "value" (number) is required.'
     });
   }
 
@@ -543,7 +551,14 @@ app.post('/api/stats/update', async (req, res) => {
       }
 
       const currentCount = typeof currentStats[useCase] === 'number' ? currentStats[useCase] : 0;
-      const newCount = Math.max(0, currentCount + delta);
+      let newCount = currentCount;
+
+      if (value !== undefined) {
+        newCount = Math.max(0, parseInt(value, 10) || 0);
+      } else if (delta !== undefined) {
+        newCount = Math.max(0, currentCount + delta);
+      }
+
       currentStats[useCase] = newCount;
 
       const writeResult = await writeGistStats(currentStats);

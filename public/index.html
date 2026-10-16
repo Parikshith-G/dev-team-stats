@@ -89,7 +89,7 @@
       <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-base font-semibold text-slate-800">Use Cases & Usage Activity</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Click + or &minus; to update counts in real time.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Type numbers directly or click + / &minus; to update counts in real time.</p>
         </div>
         <div class="text-xs text-slate-500 flex items-center gap-1.5">
           <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -285,9 +285,20 @@
             <span class="leading-relaxed select-text">${escapeHtml(useCase)}</span>
           </td>
           <td class="py-4 px-6 text-center">
-            <span id="badge-${index}" class="inline-flex items-center justify-center min-w-[3.5rem] px-3 py-1 rounded-full text-sm font-semibold font-mono-numbers bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs transition-all">
-              ${count}
-            </span>
+            <div class="inline-flex items-center justify-center">
+              <input 
+                type="number" 
+                min="0"
+                step="1"
+                id="input-${index}"
+                value="${count}" 
+                onchange="handleDirectInput('${escapeQuote(useCase)}', this.value, ${index})"
+                onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                ${isPending ? 'disabled' : ''}
+                class="w-20 text-center py-1.5 px-2 text-sm font-bold font-mono-numbers bg-indigo-50/70 hover:bg-white focus:bg-white text-indigo-700 border border-indigo-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-2xs hover:border-indigo-400"
+                title="Type a number directly or click + / &minus;"
+              />
+            </div>
           </td>
           <td class="py-4 px-6 text-center">
             <div class="inline-flex items-center rounded-lg shadow-2xs border border-slate-200 overflow-hidden bg-white">
@@ -336,13 +347,58 @@
           if (currentStats[key] === undefined) currentStats[key] = 0;
         });
 
-        renderTable();
+        // Don't re-render and overwrite if user is currently typing in an input
+        const activeEl = document.activeElement;
+        const isUserTyping = activeEl && activeEl.tagName === 'INPUT' && activeEl.id.startsWith('input-');
+        if (!isUserTyping) {
+          renderTable();
+        }
       } catch (err) {
         console.error('Failed to load stats:', err);
       } finally {
         if (!silent) {
           setTimeout(() => refreshIcon.classList.remove('animate-spin'), 300);
         }
+      }
+    }
+
+    // Direct number input change handler
+    async function handleDirectInput(useCase, newValue, rowIndex) {
+      if (pendingUpdates.has(useCase)) return;
+
+      const previousValue = currentStats[useCase] || 0;
+      const parsedValue = Math.max(0, parseInt(newValue, 10) || 0);
+
+      if (parsedValue === previousValue) return;
+
+      currentStats[useCase] = parsedValue;
+      pendingUpdates.add(useCase);
+      renderTable();
+
+      const input = document.getElementById(`input-${rowIndex}`);
+      if (input) {
+        input.classList.remove('count-bump');
+        void input.offsetWidth;
+        input.classList.add('count-bump');
+      }
+
+      try {
+        const res = await fetch('/api/stats/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ useCase, value: parsedValue })
+        });
+
+        const data = await res.json();
+        if (data.stats) {
+          currentStats = data.stats;
+        }
+      } catch (err) {
+        currentStats[useCase] = previousValue;
+        showToast('Unable to update count right now', 'error');
+      } finally {
+        pendingUpdates.delete(useCase);
+        renderTable();
       }
     }
 
@@ -356,11 +412,11 @@
       pendingUpdates.add(useCase);
       renderTable();
 
-      const badge = document.getElementById(`badge-${rowIndex}`);
-      if (badge) {
-        badge.classList.remove('count-bump');
-        void badge.offsetWidth;
-        badge.classList.add('count-bump');
+      const input = document.getElementById(`input-${rowIndex}`);
+      if (input) {
+        input.classList.remove('count-bump');
+        void input.offsetWidth;
+        input.classList.add('count-bump');
       }
 
       try {
