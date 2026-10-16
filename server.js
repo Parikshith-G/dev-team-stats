@@ -83,41 +83,45 @@ function getHeaders(token) {
 }
 
 // Automatically find or create the Gist using the token if GIST_ID is not provided
-async function ensureGistId() {
+async function ensureGistId(forceNew = false) {
   const token = runtimeConfig.githubToken || process.env.GITHUB_TOKEN;
   if (!token) return null;
 
-  if (runtimeConfig.gistId && runtimeConfig.gistId.trim()) {
-    return runtimeConfig.gistId.trim();
-  }
-  if (process.env.GIST_ID && process.env.GIST_ID.trim()) {
-    runtimeConfig.gistId = process.env.GIST_ID.trim();
-    return runtimeConfig.gistId;
+  if (!forceNew) {
+    if (runtimeConfig.gistId && runtimeConfig.gistId.trim()) {
+      return runtimeConfig.gistId.trim();
+    }
+    if (process.env.GIST_ID && process.env.GIST_ID.trim()) {
+      runtimeConfig.gistId = process.env.GIST_ID.trim();
+      return runtimeConfig.gistId;
+    }
   }
 
   try {
-    console.log('[Gist Setup] Checking GitHub account for existing Dev Team Stats Gist...');
-    const listRes = await fetch('https://api.github.com/gists?per_page=50', {
-      headers: getHeaders(token)
-    });
+    if (!forceNew) {
+      console.log('[Gist Setup] Checking GitHub account for existing Dev Team Stats Gist...');
+      const listRes = await fetch('https://api.github.com/gists?per_page=50', {
+        headers: getHeaders(token)
+      });
 
-    if (listRes.ok) {
-      const gists = await listRes.json();
-      const existing = gists.find(g => 
-        (g.files && (g.files[GIST_FILENAME] || g.files[GIST_HOURS_FILENAME])) || 
-        (g.description && g.description.toLowerCase().includes('dev team stats'))
-      );
-      if (existing) {
-        console.log(`[Gist Setup] Found existing Gist: ${existing.id}`);
-        runtimeConfig.gistId = existing.id;
-        return existing.id;
+      if (listRes.ok) {
+        const gists = await listRes.json();
+        const existing = gists.find(g => 
+          (g.files && (g.files[GIST_FILENAME] || g.files[GIST_HOURS_FILENAME])) || 
+          (g.description && g.description.toLowerCase().includes('dev team stats'))
+        );
+        if (existing) {
+          console.log(`[Gist Setup] Found existing Gist: ${existing.id}`);
+          runtimeConfig.gistId = existing.id;
+          return existing.id;
+        }
+      } else {
+        console.warn(`[Gist Setup] GitHub API returned status ${listRes.status} when querying gists.`);
       }
-    } else {
-      console.warn(`[Gist Setup] GitHub API returned status ${listRes.status} when querying gists.`);
     }
 
-    // Auto-create if not found
-    console.log('[Gist Setup] Auto-creating a new Gist using your token...');
+    // Auto-create new Gist
+    console.log('[Gist Setup] Creating a new Gist automatically using your token...');
     const initialStats = JSON.stringify(memoryStats, null, 2);
     const initialHours = JSON.stringify({ week: getCurrentWeekRange(), entries: [] }, null, 2);
 
@@ -169,16 +173,37 @@ async function fetchGistStats() {
 
   const headers = token ? getHeaders(token) : { 'User-Agent': 'Render-Dev-Team-Stats-App' };
   
-  const response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
+  let response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
     headers: {
       ...headers,
       'Cache-Control': 'no-cache'
     }
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`GitHub API error (${response.status}): ${errorText}`);
+  // Handle 404 Not Found (e.g. invalid or deleted Gist ID)
+  if (response.status === 404) {
+    console.warn(`[Gist Fetch] Gist ID "${gistId}" returned 404 Not Found.`);
+    runtimeConfig.gistId = null;
+    if (token) {
+      console.log('[Gist Fetch] Attempting to auto-create a fresh Gist...');
+      gistId = await ensureGistId(true);
+      if (gistId) {
+        response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
+          headers: { ...headers, 'Cache-Control': 'no-cache' }
+        });
+      }
+    }
+  }
+
+  if (!response || !response.ok) {
+    const errorText = response ? await response.text() : 'Gist not accessible';
+    console.warn(`[Gist Fetch] Response not OK (${response ? response.status : 'none'}):`, errorText);
+    return {
+      connected: false,
+      gistId: null,
+      reason: `Gist ID was not found or is inaccessible on GitHub. Please check Gist Config.`,
+      stats: memoryStats
+    };
   }
 
   const gistData = await response.json();
@@ -228,18 +253,16 @@ async function writeGistStats(newStats) {
   let gistId = runtimeConfig.gistId || process.env.GIST_ID;
 
   if (!token) {
-    throw new Error('GitHub Token is missing. A token with "gist" scope is required.');
+    memoryStats = newStats;
+    return { gistId: null, stats: newStats, connected: false };
   }
   if (!gistId) {
     gistId = await ensureGistId();
   }
-  if (!gistId) {
-    throw new Error('Gist ID could not be determined. Please verify your token permissions.');
-  }
 
   const content = JSON.stringify(newStats, null, 2);
 
-  const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+  let response = gistId ? await fetch(`https://api.github.com/gists/${gistId}`, {
     method: 'PATCH',
     headers: getHeaders(token),
     body: JSON.stringify({
@@ -250,20 +273,49 @@ async function writeGistStats(newStats) {
         }
       }
     })
-  });
+  }) : null;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update Gist (${response.status}): ${errorText}`);
+  // Handle 404 (Gist ID does not exist on GitHub)
+  if (response && response.status === 404) {
+    console.warn(`[Gist Write] Gist ID "${gistId}" returned 404. Auto-creating a fresh Gist...`);
+    runtimeConfig.gistId = null;
+    gistId = await ensureGistId(true);
+    if (gistId) {
+      response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: getHeaders(token),
+        body: JSON.stringify({
+          description: 'Dev Team AI Stats and Weekly Hours',
+          files: {
+            [GIST_FILENAME]: {
+              content
+            }
+          }
+        })
+      });
+    }
   }
 
   memoryStats = newStats;
-  const data = await response.json();
-  return {
-    gistId,
-    gistUrl: data.html_url,
-    stats: newStats
-  };
+
+  if (response && response.ok) {
+    const data = await response.json();
+    return {
+      gistId,
+      gistUrl: data.html_url,
+      stats: newStats,
+      connected: true
+    };
+  } else {
+    const errorText = response ? await response.text() : 'No Gist ID available';
+    console.warn('[Gist Write] Update to Gist failed, preserved in memory:', errorText);
+    return {
+      gistId: null,
+      stats: newStats,
+      connected: false,
+      reason: 'Failed to write to GitHub Gist'
+    };
+  }
 }
 
 // Fetch Weekly Hours from Gist
@@ -287,16 +339,36 @@ async function fetchGistHours() {
 
   const headers = token ? getHeaders(token) : { 'User-Agent': 'Render-Dev-Team-Stats-App' };
 
-  const response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
+  let response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
     headers: {
       ...headers,
       'Cache-Control': 'no-cache'
     }
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`GitHub API error (${response.status}): ${errorText}`);
+  if (response.status === 404) {
+    console.warn(`[Gist Hours Fetch] Gist ID "${gistId}" returned 404. Attempting auto-creation...`);
+    runtimeConfig.gistId = null;
+    if (token) {
+      gistId = await ensureGistId(true);
+      if (gistId) {
+        response = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, {
+          headers: { ...headers, 'Cache-Control': 'no-cache' }
+        });
+      }
+    }
+  }
+
+  if (!response || !response.ok) {
+    const errorText = response ? await response.text() : 'Gist not accessible';
+    console.warn(`[Gist Hours Fetch] Gist not accessible (${response ? response.status : 'none'}):`, errorText);
+    return {
+      connected: false,
+      gistId: null,
+      reason: 'Gist is not found or inaccessible',
+      week: weekInfo,
+      entries: memoryHours.entries || []
+    };
   }
 
   const gistData = await response.json();
@@ -340,18 +412,16 @@ async function writeGistHours(hoursData) {
   let gistId = runtimeConfig.gistId || process.env.GIST_ID;
 
   if (!token) {
-    throw new Error('GitHub Token is missing.');
+    memoryHours = hoursData;
+    return { gistId: null, hours: hoursData, connected: false };
   }
   if (!gistId) {
     gistId = await ensureGistId();
   }
-  if (!gistId) {
-    throw new Error('Gist ID could not be determined. Please verify your token permissions.');
-  }
 
   const content = JSON.stringify(hoursData, null, 2);
 
-  const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+  let response = gistId ? await fetch(`https://api.github.com/gists/${gistId}`, {
     method: 'PATCH',
     headers: getHeaders(token),
     body: JSON.stringify({
@@ -361,23 +431,52 @@ async function writeGistHours(hoursData) {
         }
       }
     })
-  });
+  }) : null;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update weekly hours in Gist (${response.status}): ${errorText}`);
+  if (response && response.status === 404) {
+    console.warn(`[Gist Hours Write] Gist ID "${gistId}" returned 404. Auto-creating a fresh Gist...`);
+    runtimeConfig.gistId = null;
+    gistId = await ensureGistId(true);
+    if (gistId) {
+      response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: getHeaders(token),
+        body: JSON.stringify({
+          files: {
+            [GIST_HOURS_FILENAME]: {
+              content
+            }
+          }
+        })
+      });
+    }
   }
 
   memoryHours = hoursData;
-  const data = await response.json();
-  return {
-    gistId,
-    gistUrl: data.html_url,
-    hours: hoursData
-  };
+
+  if (response && response.ok) {
+    const data = await response.json();
+    return {
+      gistId,
+      gistUrl: data.html_url,
+      hours: hoursData,
+      connected: true
+    };
+  } else {
+    const errorText = response ? await response.text() : 'No Gist ID available';
+    console.warn('[Gist Hours Write] Update to Gist failed, preserved in memory:', errorText);
+    return {
+      gistId: null,
+      hours: hoursData,
+      connected: false
+    };
+  }
 }
 
 // Routes
+
+// Favicon route (prevent 404)
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Path requested: /ai-stats
 app.get('/ai-stats', (req, res) => {
@@ -405,8 +504,10 @@ app.get('/api/stats', async (req, res) => {
       ...result
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
+    console.error('Stats fetch error:', error.message);
+    res.json({
+      success: true,
+      connected: false,
       error: error.message,
       stats: memoryStats,
       hasToken: Boolean(runtimeConfig.githubToken || process.env.GITHUB_TOKEN),
@@ -445,16 +546,12 @@ app.post('/api/stats/update', async (req, res) => {
       const newCount = Math.max(0, currentCount + delta);
       currentStats[useCase] = newCount;
 
-      if (token && gistId) {
-        await writeGistStats(currentStats);
-      } else {
-        memoryStats = currentStats;
-      }
+      const writeResult = await writeGistStats(currentStats);
 
       return {
         stats: currentStats,
-        connected: Boolean(token && gistId),
-        gistId
+        connected: Boolean(writeResult.connected),
+        gistId: writeResult.gistId || runtimeConfig.gistId
       };
     });
 
@@ -464,10 +561,11 @@ app.post('/api/stats/update', async (req, res) => {
     });
   } catch (error) {
     console.error('Update error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stats: memoryStats
+    res.json({
+      success: true,
+      stats: memoryStats,
+      connected: false,
+      error: error.message
     });
   }
 });
@@ -483,8 +581,10 @@ app.get('/api/hours', async (req, res) => {
       ...result
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
+    console.error('Hours fetch error:', error.message);
+    res.json({
+      success: true,
+      connected: false,
       error: error.message,
       week: getCurrentWeekRange(),
       entries: memoryHours.entries || []
